@@ -54,7 +54,19 @@ if uploaded_file is not None:
     input_tensor = transform(image).unsqueeze(0)
     with torch.no_grad():
         outputs = model(input_tensor)
-        _, predicted = torch.max(outputs, 1)
-        predicted_class = CLASS_NAMES[predicted.item()]
+        probs = torch.nn.functional.softmax(outputs, dim=1)
+        top_probs, top_indices = torch.topk(probs, 3)
+        top_probs = top_probs[0].numpy()
+        top_indices = top_indices[0].numpy()
 
-    st.success(f"**Predicted Class:** {predicted_class}")
+    # Show top prediction
+    pred_class = CLASS_NAMES[top_indices[0]]
+    pred_conf = top_probs[0] * 100
+    st.success(f"🧠 **Predicted Class:** {pred_class} ({pred_conf:.2f}%)")
+
+    # Show top 3 predictions
+    st.markdown("### 🔍 Top 3 Predictions")
+    for i in range(3):
+        cls = CLASS_NAMES[top_indices[i]]
+        conf = top_probs[i] * 100
+        st.write(f"- {cls}: **{conf:.2f}%**")
